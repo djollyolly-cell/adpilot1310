@@ -787,7 +787,7 @@
             </button>
             <button class="nav-tab">
                 <span class="nav-icon">👤</span>
-                <span class="nav-text">Амбассадоры</span>
+                <span class="nav-text">Профиль</span>
             </button>
         </div>
     </div>
@@ -820,11 +820,9 @@
                     const userUsername = tg.initDataUnsafe.user.username || '';
                     
                     sendToWebhook({
-                        action: 'auth',
                         telegram_id: telegramUserId,
                         name: userName,
-                        username: userUsername,
-                        timestamp: new Date().toISOString()
+                        username: userUsername
                     });
                     
                     document.getElementById('userTelegramId').textContent = 'ID: ' + telegramUserId;
@@ -846,13 +844,39 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(result => {
                 console.log('Webhook response:', result);
+                
+                if (result.success && result.user_data) {
+                    updateUIWithUserData(result.user_data);
+                } else if (result.error) {
+                    console.error('Webhook error:', result.error);
+                }
             })
             .catch(error => {
                 console.error('Webhook error:', error);
             });
+        }
+
+        function updateUIWithUserData(userData) {
+            if (userData.telegram_id) {
+                document.getElementById('userTelegramId').textContent = 'ID: ' + userData.telegram_id;
+            }
+            
+            if (userData.name) {
+                const subtitleElement = document.querySelector('.subtitle');
+                if (subtitleElement) {
+                    subtitleElement.textContent = 'Привет, ' + userData.name + '!';
+                }
+            }
+            
+            console.log('User data loaded:', userData);
         }
 
         function createParticles() {
